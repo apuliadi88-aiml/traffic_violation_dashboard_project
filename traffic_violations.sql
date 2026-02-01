@@ -1,4 +1,3 @@
-DROP TABLE traffic_violations;
 
 CREATE TABLE traffic_violations(
     seqid TEXT PRIMARY KEY,
@@ -74,3 +73,84 @@ WHERE latitude IS NOT NULL AND longitude IS NOT NULL
 GROUP BY latitude, longitude
 ORDER BY incident_count DESC
 LIMIT 5;
+
+-- Do certain demographics correlate with specific violation types
+SELECT race,violation_type, COUNT(*) as violation_count
+FROM traffic_violations
+GROUP BY race,violation_type
+ORDER BY violation_type,violation_count DESC;
+
+SELECT gender,violation_type,COUNT(*) AS violation_count
+FROM traffic_violations
+WHERE gender IS NOT NULL
+  AND violation_type IS NOT NULL
+GROUP BY gender, violation_type
+ORDER BY gender, violation_count DESC;
+
+-- How does violation frequency vary by time of day, weekday, or month?
+SELECT EXTRACT(HOUR FROM "timestamp") AS hour_of_day,
+       COUNT(*) AS violation_count
+FROM traffic_violations
+WHERE "timestamp" IS NOT NULL
+GROUP BY hour_of_day
+ORDER BY hour_of_day;
+
+SELECT EXTRACT(DAY FROM date_of_stop) AS day_of_month,
+       COUNT(*) AS violation_count
+FROM traffic_violations
+WHERE date_of_stop IS NOT NULL
+GROUP BY day_of_week
+ORDER BY day_of_week;
+ 
+SELECT TO_CHAR(date_of_stop, 'Day') AS weekday,
+       EXTRACT(DOW FROM date_of_stop) AS weekday_num,
+       COUNT(*) AS violation_count
+FROM traffic_violations
+WHERE date_of_stop IS NOT NULL
+GROUP BY weekday, weekday_num
+ORDER BY weekday_num;
+
+SELECT TO_CHAR(date_of_stop, 'Month') AS month_of_year,
+	   EXTRACT(MONTH FROM date_of_stop) AS month_num,
+       COUNT(*) as violation_count
+FROM traffic_violations
+WHERE date_of_stop IS NOT NULL
+GROUP BY month_of_year, month_num
+ORDER BY month_num;
+
+--What types of vehicles are most often involved in violations?
+SELECT vehicle_category,
+       COUNT(*) as violation_count
+FROM traffic_violations
+GROUP BY vehicle_category
+ORDER BY violation_count DESC;
+
+
+-- How often do violations involve accidents, injuries, or vehicle damage?
+SELECT accident,
+       COUNT(*) as violation_count
+FROM traffic_violations
+GROUP BY accident
+ORDER BY violation_count;
+
+SELECT
+    COUNT(*) AS total_violations,
+    COUNT(*) FILTER (WHERE accident = TRUE) AS accident_count,
+    COUNT(*) FILTER (WHERE personal_injury = TRUE) AS injury_count,
+    COUNT(*) FILTER (WHERE property_damage = TRUE) AS property_damage_count,
+    COUNT(*) FILTER (WHERE fatal = TRUE) AS fatal_count
+FROM traffic_violations;
+
+SELECT
+    ROUND(100.0 * COUNT(*) FILTER (WHERE accident = TRUE) / COUNT(*), 2) AS accident_pct,
+    ROUND(100.0 * COUNT(*) FILTER (WHERE personal_injury = TRUE) / COUNT(*), 2) AS injury_pct,
+    ROUND(100.0 * COUNT(*) FILTER (WHERE property_damage = TRUE) / COUNT(*), 2) AS property_damage_pct,
+    ROUND(100.0 * COUNT(*) FILTER (WHERE fatal = TRUE) / COUNT(*), 2) AS fatal_pct
+FROM traffic_violations;
+
+
+SELECT * FROM traffic_violations LIMIT 2;
+
+	   
+
+
